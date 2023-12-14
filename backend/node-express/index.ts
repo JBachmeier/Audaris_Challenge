@@ -1,3 +1,9 @@
+/**
+ * TODO:
+ * - Refactor Database!
+ * - Refactor Events (POST,GET,...)
+ */
+
 import {Schema} from 'mongoose';
 import { Request, Response } from 'express';
 import Hasher from './hash';
@@ -46,10 +52,7 @@ app.use(cors({
 }));
 
 
-/**
- * TODO:
- * - Check for input lenght!
- */
+
 // Route to handle the POST request
 app.post('/userLogin', async (req: Request, res: Response) => {
   const receivedData = req.body;
@@ -63,6 +66,7 @@ app.post('/userLogin', async (req: Request, res: Response) => {
 
     const hashedPW = hasher.hashPassword(password)
     let date: Date = new Date(); 
+    
     // Find the user
     const user = await users.findOneAndUpdate({ 'email': usrname, 'password_hash':  hashedPW}, {'updated_at': date}, {returnDocument: 'before'}).exec();
     

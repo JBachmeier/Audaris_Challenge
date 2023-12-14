@@ -27,12 +27,17 @@ const globalVars = createStore({
         }
     },
     getters: {
-        getUserMail(state){
-            return state.user.user.email
+        getUser(state){
+            return state.user.user
         }
     }
 })
 
+/**
+ * TODO:
+ * - Add the isAuthenticated to Cookies, so it doenst reset
+ * -> Add a logout button
+ */
 // Function to check if the user is logged in
 const isAuthenticated = () => {
     return globalVars.state.user !== null;

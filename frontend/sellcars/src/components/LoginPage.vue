@@ -2,7 +2,7 @@
     <div class="w-screen h-screen grid place-content-center">
       <div class="bg-gray-500 p-10 rounded-lg drop-shadow-xl">
         <p class="text-white mb-3 text-xl">SellCars</p>
-        <form @submit.prevent="emitEventToServer" class="grid">
+        <form @submit.prevent="emitLoginToServer" class="grid">
           <input class="border py-1 pl-1 rounded-sm" type="text" id="usrname" placeholder="Username" v-model="usrname" maxlength="75"/><br>
           <input class="border py-1 pl-1 rounded-sm" type="password" id="password" placeholder="Password" v-model="password" maxlength="75"/><br>
           <p class="text-red-500 mb-5" :class="{'invisible': wrongInput}">Wrong Username or Password!</p>
@@ -30,7 +30,7 @@
       /**
        * Sends an asynchronous event to the Server for Logging in
        */
-      const emitEventToServer = async () => {
+      const emitLoginToServer = async () => {
         try {
           console.log(wrongInput.value)
           const eventData = { usrname: usrname.value, password: password.value };
@@ -49,10 +49,9 @@
           wrongInput.value = false;
           store.commit('setUser', null);
         }
-        console.log(localStorage.getItem('userToken'));
       };
   
-      return { usrname, password, emitEventToServer, wrongInput };
+      return { usrname, password, emitLoginToServer, wrongInput };
     },
   };
   </script>
