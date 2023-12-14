@@ -1,0 +1,45 @@
+[{
+  "_id": {
+    "$oid": "6579a8d48d6fd0c84d4884bb"
+  },
+  "first_name": "John",
+  "last_name": "Doe",
+  "password_hash": "8b1a9953c4611296a827abf8c47804d7",
+  "email": "John@gmail.com",
+  "created_at": {
+    "$date": "1999-12-31T23:00:00.000Z"
+  },
+  "updated_at": {
+    "$date": "1999-12-31T23:00:00.000Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6579a91e8d6fd0c84d4884bc"
+  },
+  "first_name": "John",
+  "last_name": "Doe",
+  "password_hash": "202cb962ac59075b964b07152d234b70",
+  "email": "John2@gmail.com",
+  "created_at": {
+    "$date": "1999-12-31T23:00:00.000Z"
+  },
+  "updated_at": {
+    "$date": "1999-12-31T23:00:00.000Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6579a9728d6fd0c84d4884bd"
+  },
+  "first_name": "John",
+  "last_name": "Doe",
+  "password_hash": "900150983cd24fb0d6963f7d28e17f72",
+  "email": "John3@gmail.com",
+  "created_at": {
+    "$date": "1999-12-31T23:00:00.000Z"
+  },
+  "updated_at": {
+    "$date": "1999-12-31T23:00:00.000Z"
+  }
+}]
