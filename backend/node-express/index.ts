@@ -131,42 +131,13 @@ app.post('/userLogin', async (req: Request, res: Response) => {
  */
 app.post('/customersUpload',async (req: Request, res: Response) => {
   const receivedCSV = req.body;
-  let allCustomers = [];
+  let allCustomersFormatted = [];
   
   try {
     console.log('Received data:', receivedCSV);
 
-    /* if no header present:
-    
-    const csvHeader = receivedCSV[0];
-    const csvData = receivedCSV.slice(1);
-    */
-
     for (let row of receivedCSV) {
-      /* if no header present:
-      const customer = {
-        intnr: row[0],
-        type: row[1],
-        contact_persons: [{
-          first_name: row[2],
-          last_name: row[3],
-          email: row[4],
-          mobile_phone: row[5],
-          birth_date: row[6]
-        }],
-        addresses: [{
-          company_name: row[7],
-          country: row[8],
-          city: row[9],
-          zip: row[10],
-          fax: row[11],
-          phone: row[12],
-          street: row[13],
-          email: row[14]
-        }]
-      };*/
-
-      
+     
       const customer = {
         intnr: row.intnr,
         type: row.type,
@@ -189,18 +160,60 @@ app.post('/customersUpload',async (req: Request, res: Response) => {
         }]
     };
 
-      allCustomers.push(customer);
+    allCustomersFormatted.push(customer);
 
     }
     
     
 
-    customersModel.insertMany(allCustomers);
+    customersModel.insertMany(allCustomersFormatted);
 
-    console.log("all Customers", allCustomers);
-    console.log("first Customer", allCustomers[0]);
-    console.log("first Customers contact Persons", allCustomers[0].contact_persons);
-    res.status(200).json({ message: 'CSV uploaded' , allCustomers});
+    console.log("all Customers", allCustomersFormatted);
+    console.log("first Customer", allCustomersFormatted[0]);
+    console.log("first Customers contact Persons", allCustomersFormatted[0].contact_persons);
+    res.status(200).json({ message: 'CSV uploaded' , receivedCSV});
+
+  } catch (error){
+    console.error(error)
+  }
+});
+
+app.post('/contactsUpload',async (req: Request, res: Response) => {
+  const receivedCSV = req.body;
+  //let allContactsFormatted = [];
+  
+  try {
+    console.log('Received data:', receivedCSV);
+
+    for (let row of receivedCSV) {
+     
+    const contact_person = {
+          first_name: row.first_name,
+          last_name: row.last_name,
+          email: row.email,
+          mobile_phone: row.mobile_phone,
+          birth_date: row.birth_date
+    };
+
+    const customer = await customersModel.findOne({ intnr: row.intnr });
+
+    if (!customer) {
+      res.status(404).json({ message: 'Customer not found' });
+      return;
+    } else{
+      customer.contact_persons.push(contact_person);
+      await customer.save();
+    }
+
+    //allContactsFormatted.push(contact_person);
+
+    }
+
+    const allCustomers = await customersModel.find();
+
+    console.log("all Contacts", receivedCSV);
+    console.log("first Contact", receivedCSV[0]);
+    res.status(200).json({ message: 'Contacs uploaded' , allCustomers});
 
   } catch (error){
     console.error(error)

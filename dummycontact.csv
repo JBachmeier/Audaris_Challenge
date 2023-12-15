@@ -1,0 +1,4 @@
+intnr,first_name,last_name,email,mobile_phone,birth_date
+1234567890,Alice,Smith,alicesmith@example.com,1234567890,1990-01-01
+2345678901,Bob,Johnson,bobjohnson@example.com,0987654321,1995-02-02
+3456789013,Charlie,Brown,charliebrown@example.com,1122334455,2000-03-03

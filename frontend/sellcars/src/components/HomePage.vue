@@ -4,8 +4,12 @@
             <p>User</p>
             <p>{{ user.email }}</p>
             <p>Last Login: {{ user.updated_at }}</p><br>
-            <input type="file" ref="file" accept=".csv" maxlength="512000" class="hidden" @change="handleFileUpload"/>
-            <button @click="$refs.file.click()" class="bg-gray-500 p-2 border-2 rounded-md">Import customers (.cvs)</button>
+            <input type="file" id="customersfile" ref="customersfile" accept=".csv" maxlength="512000" class="hidden" @change="handleFileUpload"/>
+            <button @click="$refs.customersfile.click()" class="bg-gray-500 p-2 border-2 rounded-md">Import customers (.cvs)</button>
+            <input type="file" id="contactfile" ref="contactfile" accept=".csv" maxlength="512000" class="hidden" @change="handleFileUpload"/>
+            <button @click="$refs.contactfile.click()" class="bg-gray-500 p-2 border-2 rounded-md">Import contact persons (.cvs)</button>
+            <input type="file" id="addressfile" ref="addressfile" accept=".csv" maxlength="512000" class="hidden" @change="handleFileUpload"/>
+            <button @click="$refs.addressfile.click()" class="bg-gray-500 p-2 border-2 rounded-md">Import addresses (.cvs)</button>
         </div>
         <div class="w-full col-span-3 bg-gray-200">
             <p>Customers</p>
@@ -13,9 +17,9 @@
             <h2>processed CSV Data:</h2>
             <table>
                 <tr>
-                    <th v-for="(header, index) in headers" :key="index">{{ header }}</th>
+                    <th class="px-3" v-for="(header, index) in headers" :key="index">{{ header }}</th>
                 </tr>
-                <tr v-for="(row, index) in customerData" :key="index">
+                <tr v-for="(row, index) in displayedCustomerData" :key="index">
                     <td v-for="(cell, index) in row" :key="index">{{ cell }}</td>
                 </tr>
             </table>
@@ -25,21 +29,40 @@
 </template>
 
 <script>
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { useStore } from 'vuex';
 import axios from 'axios';
 import Papa from 'papaparse';
 
+/**
+ * TODO:
+ * - Add search function
+ * - Add Sorting
+ * - Refactor code
+ */
 export default {
     setup() {
         const store = useStore();
         const user = store.getters.getUser;
         const customerData = ref([]);
-        const headers = ['intnr', 'type', 'contact_person', 'address'];
+        const headers = ['Internal number', 'First name', 'Last name', 'Company name', 'Country', 'Zip/City', 'Address', 'Actions'];
+
+        // Changes the data everytime the customerData changes
+        const displayedCustomerData = computed(() => customerData.value.map(customer => ({
+            intnr: customer.intnr,
+            first_name: customer.first_name,
+            last_name: customer.last_name,
+            company_name: customer.company_name,
+            country: customer.country,
+            zip_city: customer.zip,
+            street: customer.street,
+        })));
+
 
         console.log(user);
 
         const handleFileUpload = async (event) => {
+            console.log("event:", event);
             const selectedFile = event.target.files[0];
             console.log(selectedFile);
             if (selectedFile.size > 0) {
@@ -54,7 +77,13 @@ export default {
                     });
 
                     console.log(result);
-                    await emitCustomersToServer(result.data);
+                    if(event.target.id === "customersfile"){
+                        await emitCustomersToServer(result.data);
+                    } else if(event.target.id === "contactfile"){
+                        await emitContactsToServer(result.data);
+                    } else if(event.target.id === "addressfile"){
+                        await emitAddressesToServer(result.data);
+                    }
                 } catch (error) {
                     console.error("Error parsing CSV:", error);
                 }
@@ -64,64 +93,42 @@ export default {
         };
 
         const emitCustomersToServer = async (csvData) => {
-        try {
-          const response = await axios.post('http://localhost:3000/customersUpload', csvData);
-
-          console.log("repsonseData:", response.data.allCustomers[0]);
-          customerData.value = response.data.allCustomers;
-
-        } catch (error) {
-          console.log(error);
-        }
-      };
-
-        return { user, handleFileUpload, emitCustomersToServer, customerData, headers };
-    },
-};
-
-
-/*export default {
-    setup(){
-        const store = useStore();
-        const user = store.getters.getUser;
-        const csvData = ref([]);
-        const parsed = ref(false);
-
-        console.log(user)
-
-        const handleFileUpload = async (event) => {
-            const selectedFile = event.target.files[0];
-            console.log(selectedFile)
-            if (selectedFile.size > 0) {
-                console.log("File name:", selectedFile.name);
-                console.log("File size:", selectedFile.size, "bytes");
-                await Papa.parse(selectedFile, {
-                    complete: (result) => {
-                        console.log("Parsing...")
-                        csvData.value = result;
-                        parsed.value = true;
-                    },
-                    header: true, // Set to true if the CSV file has a header row
-                });
-            } else {
-                console.warn("No file selected.");
-            }
-            console.log(csvData)
-        }
-        /* This is for getting the CustomerData (no Data avialable yet so not implemented!) 
-        const getCustomersFromServer = async () => {
             try {
-                const response = await axios.get('http://localhost:3000/userLogin');
-                console.log(response)
+                const response = await axios.post('http://localhost:3000/customersUpload', csvData);
+
+                console.log("repsonseData:", response.data);
+                customerData.value = response.data.receivedCSV;
+
             } catch (error) {
-                console.log(error);
+            console.log(error);
+            }
+        };
+        const emitContactsToServer = async (csvData) => {
+            try {
+                const response = await axios.post('http://localhost:3000/contactsUpload', csvData);
+
+                console.log("repsonseData:", response.data);
+                //customerData.value = response.data.receivedCSV;
+
+            } catch (error) {
+            console.log(error);
+            }
+        };
+        const emitAddressesToServer = async (csvData) => {
+            try {
+                const response = await axios.post('http://localhost:3000/addressesUpload', csvData);
+
+                console.log("repsonseData:", response.data);
+                //customerData.value = response.data.receivedCSV;
+
+            } catch (error) {
+            console.log(error);
             }
         };
 
-
-        return { user, handleFileUpload };
-    }
-}*/
+        return { user, handleFileUpload, emitCustomersToServer, customerData, headers, displayedCustomerData };
+    },
+};
 </script>
 
 <style>
