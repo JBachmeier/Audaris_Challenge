@@ -40,7 +40,7 @@
             wrongInput.value = true;
 
             store.commit('setUser', response.data);
-            router.push('/');
+            router.push('/customers-page');
           } else {
             store.commit('setUser', null);
           }

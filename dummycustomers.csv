@@ -1,0 +1,4 @@
+intnr,type,first_name,last_name,email,mobile_phone,birth_date,company_name,country,city,zip,fax,phone,street,email
+1234567890,PRIVATE,John,Doe,johndoe@example.com,1234567890,1980-01-01,Company Name,USA,New York,10001,1234567890,1234567890,Street Name,johndoe@company.com
+2345678901,COMPANY,Jane,Doe,janedoe@example.com,2345678901,1990-01-01,Another Company,USA,Los Angeles,90001,2345678901,2345678901,Another Street,janedoe@anothercompany.com
+3456789012,DEALER,Jim,Doe,jimdoe@example.com,3456789012,2000-01-01,Yet Another Company,USA,Chicago,60007,3456789012,3456789012,Yet Another Street,jimdoe@yetanothercompany.com

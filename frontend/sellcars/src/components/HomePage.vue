@@ -10,6 +10,16 @@
         <div class="w-full col-span-3 bg-gray-200">
             <p>Customers</p>
             <input class="border py-1 pl-1 rounded-sm" type="text" id="customer" placeholder="Search by all columns" >
+            <h2>processed CSV Data:</h2>
+            <table>
+                <tr>
+                    <th v-for="(header, index) in headers" :key="index">{{ header }}</th>
+                </tr>
+                <tr v-for="(row, index) in customerData" :key="index">
+                    <td v-for="(cell, index) in row" :key="index">{{ cell }}</td>
+                </tr>
+            </table>
+            
         </div>
     </div>
 </template>
@@ -17,27 +27,79 @@
 <script>
 import { ref } from 'vue';
 import { useStore } from 'vuex';
-//import axios from 'axios';
+import axios from 'axios';
 import Papa from 'papaparse';
 
-
 export default {
+    setup() {
+        const store = useStore();
+        const user = store.getters.getUser;
+        const customerData = ref([]);
+        const headers = ['intnr', 'type', 'contact_person', 'address'];
+
+        console.log(user);
+
+        const handleFileUpload = async (event) => {
+            const selectedFile = event.target.files[0];
+            console.log(selectedFile);
+            if (selectedFile.size > 0) {
+                console.log("File name:", selectedFile.name);
+                console.log("File size:", selectedFile.size, "bytes");
+                try {
+                    const result = await new Promise((resolve) => {
+                        Papa.parse(selectedFile, {
+                            complete: (result) => resolve(result),
+                            header: true, // Set to true if the CSV file has a header row
+                        });
+                    });
+
+                    console.log(result);
+                    await emitCustomersToServer(result.data);
+                } catch (error) {
+                    console.error("Error parsing CSV:", error);
+                }
+            } else {
+                console.warn("No file selected.");
+            }
+        };
+
+        const emitCustomersToServer = async (csvData) => {
+        try {
+          const response = await axios.post('http://localhost:3000/customersUpload', csvData);
+
+          console.log("repsonseData:", response.data.allCustomers[0]);
+          customerData.value = response.data.allCustomers;
+
+        } catch (error) {
+          console.log(error);
+        }
+      };
+
+        return { user, handleFileUpload, emitCustomersToServer, customerData, headers };
+    },
+};
+
+
+/*export default {
     setup(){
         const store = useStore();
         const user = store.getters.getUser;
-        const csvData = ref(null);
+        const csvData = ref([]);
+        const parsed = ref(false);
 
         console.log(user)
 
-        const handleFileUpload = (event) => {
+        const handleFileUpload = async (event) => {
             const selectedFile = event.target.files[0];
             console.log(selectedFile)
             if (selectedFile.size > 0) {
                 console.log("File name:", selectedFile.name);
                 console.log("File size:", selectedFile.size, "bytes");
-                Papa.parse(selectedFile, {
+                await Papa.parse(selectedFile, {
                     complete: (result) => {
-                    csvData.value = result.data;
+                        console.log("Parsing...")
+                        csvData.value = result;
+                        parsed.value = true;
                     },
                     header: true, // Set to true if the CSV file has a header row
                 });
@@ -54,12 +116,12 @@ export default {
             } catch (error) {
                 console.log(error);
             }
-        };*/
+        };
 
 
         return { user, handleFileUpload };
     }
-}
+}*/
 </script>
 
 <style>

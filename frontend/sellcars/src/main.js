@@ -8,7 +8,8 @@ import HomePage from './components/HomePage.vue';
 
 const routes = [
     { path: '/login', component: LoginPage},
-    { path: '/', component: HomePage, meta: { requiresAuth: true }}
+    { path: '/customers-page', component: HomePage, meta: { requiresAuth: true }},
+    { path: '/', meta: { requiresAuth: true }}
 ];
 
 const router = createRouter({
