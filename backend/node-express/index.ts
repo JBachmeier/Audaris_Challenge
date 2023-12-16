@@ -46,7 +46,7 @@ const contactPersonSchema = new Schema({
   email: {type: String, maxlength: [50, 'The value of path `{PATH}` (`{VALUE}`) exceeds the maximum allowed length ({MAXLENGTH}).']},
   mobile_phone: {type: String, maxlength: [20, 'The value of path `{PATH}` (`{VALUE}`) exceeds the maximum allowed length ({MAXLENGTH}).']},
   birth_date: Date,
-  // TODO: add address field referencing the Address in the addresses array
+  address: { type: Schema.Types.ObjectId, ref: 'Address', default: null },
 });
 
 const customerSchema = new Schema({
@@ -65,6 +65,7 @@ const customerSchema = new Schema({
 });
 
 const customersModel = mongoose.model('Customer', customerSchema);
+//const addressModel = new mongoose.model('Address', addressSchema);
 
 async function startServer() {
   try {
@@ -127,7 +128,6 @@ app.post('/userLogin', async (req: Request, res: Response) => {
  * TODO:
  * - Implement validation system
  * - Implement error handling
- * - save data to DB
  */
 app.post('/customersUpload',async (req: Request, res: Response) => {
   const receivedCSV = req.body;
@@ -137,8 +137,34 @@ app.post('/customersUpload',async (req: Request, res: Response) => {
     console.log('Received data:', receivedCSV);
 
     for (let row of receivedCSV) {
-     
-      const customer = {
+
+    /*const address = new mongoose.model('Address', addressSchema)({
+      company_name: row.company_name,
+      country: row.country,
+      city: row.city,
+      zip: row.zip,
+      fax: row.fax,
+      phone: row.phone,
+      street: row.street,
+      email: row.email_1
+    });
+    await address.save();*/
+
+    const address = {
+      company_name: row.company_name,
+      country: row.country,
+      city: row.city,
+      zip: row.zip,
+      fax: row.fax,
+      phone: row.phone,
+      street: row.street,
+      email: row.email_1
+    };
+
+    //const createdAddress = await addressModel.create(address);
+
+    // Create the customer with a reference to the address
+    const customer = {
         intnr: row.intnr,
         type: row.type,
         contact_persons: [{
@@ -146,74 +172,138 @@ app.post('/customersUpload',async (req: Request, res: Response) => {
             last_name: row.last_name,
             email: row.email,
             mobile_phone: row.mobile_phone,
-            birth_date: row.birth_date
+            birth_date: row.birth_date,
         }],
-        addresses: [{
-            company_name: row.company_name,
-            country: row.country,
-            city: row.city,
-            zip: row.zip,
-            fax: row.fax,
-            phone: row.phone,
-            street: row.street,
-            email: row.email_1
-        }]
+        addresses: address // Add the Address to the addresses array directly instead of referencing (see asignment)
     };
 
     allCustomersFormatted.push(customer);
 
     }
-    
-    
 
-    customersModel.insertMany(allCustomersFormatted);
+    await customersModel.insertMany(allCustomersFormatted);    
+
+    const allCustomers = await customersModel.find();
+
+    // Add the address-reference to the contact person
+    // this has to be done AFTER the customers are created, due to the creation of the id by MongoDB
+    for (let customer of allCustomers) {
+      customer.contact_persons[0].address = customer.addresses[0]._id;
+      await customer.save();
+    }
+
+    
 
     console.log("all Customers", allCustomersFormatted);
     console.log("first Customer", allCustomersFormatted[0]);
     console.log("first Customers contact Persons", allCustomersFormatted[0].contact_persons);
-    res.status(200).json({ message: 'CSV uploaded' , receivedCSV});
+    res.status(200).json({ message: 'CSV uploaded' , allCustomers});
 
   } catch (error){
     console.error(error)
   }
 });
 
+/**
+ * TODO:
+ * - Add response for not found customers
+ * - Implement error handling
+ */
+
 app.post('/contactsUpload',async (req: Request, res: Response) => {
   const receivedCSV = req.body;
-  //let allContactsFormatted = [];
   
   try {
     console.log('Received data:', receivedCSV);
 
     for (let row of receivedCSV) {
      
-    const contact_person = {
-          first_name: row.first_name,
-          last_name: row.last_name,
-          email: row.email,
-          mobile_phone: row.mobile_phone,
-          birth_date: row.birth_date
+    // Create the contact person (types have to be declared, so address can be null)
+    const contact_person: {
+      first_name: string;
+      last_name: string;
+      email: string;
+      mobile_phone: string;
+      birth_date: string;
+      address: string | null;
+    } = {
+      first_name: row.first_name,
+      last_name: row.last_name,
+      email: row.email,
+      mobile_phone: row.mobile_phone,
+      birth_date: row.birth_date,
+      address: null,
     };
 
     const customer = await customersModel.findOne({ intnr: row.intnr });
 
     if (!customer) {
-      res.status(404).json({ message: 'Customer not found' });
-      return;
+      //res.status(404).json({ message: 'Customer not found' });
+      //return;
     } else{
+      console.log("customer found");
       customer.contact_persons.push(contact_person);
       await customer.save();
     }
-
-    //allContactsFormatted.push(contact_person);
 
     }
 
     const allCustomers = await customersModel.find();
 
-    console.log("all Contacts", receivedCSV);
-    console.log("first Contact", receivedCSV[0]);
+    console.log("all Customers", allCustomers);
+
+    console.log("first Customers contact", allCustomers[0].contact_persons);
     res.status(200).json({ message: 'Contacs uploaded' , allCustomers});
+
+  } catch (error){
+    console.error(error)
+  }
+});
+
+/**
+ * TODO:
+ * - Add response for not found customers
+ * - Implement error handling
+ */
+
+app.post('/addressesUpload',async (req: Request, res: Response) => {
+  const receivedCSV = req.body;
+  let errorMessage = "";
+  try {
+    console.log('Received data:', receivedCSV);
+
+    for (let row of receivedCSV) {
+     
+    const address = {
+      company_name: row.company_name,
+      country: row.country,
+      city: row.city,
+      zip: row.zip,
+      fax: row.fax,
+      phone: row.phone,
+      street: row.street,
+      email: row.email
+    };
+
+    const customer = await customersModel.findOne({ intnr: row.intnr });
+
+    if (!customer) {
+      //res.status(404).json({ message: 'Customer not found' });
+      //return;
+    } else{
+      customer.addresses.push(address);
+      await customer.save();
+    }
+
+    }
+
+    const allCustomers = await customersModel.find();
+
+    console.log("all Customers", allCustomers);
+
+    console.log("all addresses", receivedCSV);
+    console.log("first address", receivedCSV[0]);
+    res.status(200).json({ message: 'addresses uploaded' , allCustomers, errorMessage: errorMessage});
 
   } catch (error){
     console.error(error)

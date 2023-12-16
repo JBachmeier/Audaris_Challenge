@@ -1,0 +1,4 @@
+intnr,company_name,country,city,zip,fax,phone,street,email
+1234567890,Company A,USA,New York,10001,1234567890,0987654321,Street A,companya@example.com
+2345678901,Company B,Canada,Toronto,12345,2345678901,9876543210,Street B,companyb@example.com
+345678902,Company C,UK,London,12341,3456789012,8765432109,Street C,companyc@example.com

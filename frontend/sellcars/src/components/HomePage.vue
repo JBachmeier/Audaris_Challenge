@@ -48,7 +48,13 @@ export default {
         const headers = ['Internal number', 'First name', 'Last name', 'Company name', 'Country', 'Zip/City', 'Address', 'Actions'];
 
         // Changes the data everytime the customerData changes
-        const displayedCustomerData = computed(() => customerData.value.map(customer => ({
+        /**
+         * TODO:
+         * - Change the adress to the reference inside the contact_person array
+         
+        const displayedCustomerData = computed(() => 
+        
+        customerData.value.map(customer => ({
             intnr: customer.intnr,
             first_name: customer.first_name,
             last_name: customer.last_name,
@@ -56,7 +62,25 @@ export default {
             country: customer.country,
             zip_city: customer.zip,
             street: customer.street,
-        })));
+        })));*/
+
+        const displayedCustomerData = computed(() => 
+            customerData.value.flatMap(customer => 
+                customer.contact_persons.map(contact_person => {
+                    // Find the address that corresponds to the contact person's address ID
+                    const address = customer.addresses.find(addr => addr._id === contact_person.address);
+                    return {
+                        intnr: customer.intnr,
+                        first_name: contact_person.first_name,
+                        last_name: contact_person.last_name,
+                        company_name: address ? address.company_name : '',
+                        country: address ? address.country : '',
+                        zip_city: address ? address.zip : '',
+                        street: address ? address.street : '',
+                    };
+                })
+            )
+        );
 
 
         console.log(user);
@@ -97,7 +121,7 @@ export default {
                 const response = await axios.post('http://localhost:3000/customersUpload', csvData);
 
                 console.log("repsonseData:", response.data);
-                customerData.value = response.data.receivedCSV;
+                customerData.value = response.data.allCustomers;
 
             } catch (error) {
             console.log(error);
@@ -108,7 +132,8 @@ export default {
                 const response = await axios.post('http://localhost:3000/contactsUpload', csvData);
 
                 console.log("repsonseData:", response.data);
-                //customerData.value = response.data.receivedCSV;
+                customerData.value = response.data.allCustomers;
+                console.log("customerData:", customerData.value);
 
             } catch (error) {
             console.log(error);
@@ -119,7 +144,7 @@ export default {
                 const response = await axios.post('http://localhost:3000/addressesUpload', csvData);
 
                 console.log("repsonseData:", response.data);
-                //customerData.value = response.data.receivedCSV;
+                customerData.value = response.data.allCustomers;
 
             } catch (error) {
             console.log(error);
