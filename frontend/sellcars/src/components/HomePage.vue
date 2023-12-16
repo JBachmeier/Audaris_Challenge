@@ -1,9 +1,9 @@
 <template>
     <div class="w-screen h-screen bg-white grid grid-cols-4">
-        <div class="">
+        <div class="fixed grid justify-self-stretch">
             <p>User</p>
-            <p>{{ user.email }}</p>
-            <p>Last Login: {{ user.updated_at }}</p><br>
+            <p>{{ user.username }}</p>
+            <p>Last Login: {{ user.lastLogin }}</p><br>
             <input type="file" id="customersfile" ref="customersfile" accept=".csv" maxlength="512000" class="hidden" @change="handleFileUpload"/>
             <button @click="$refs.customersfile.click()" class="bg-gray-500 p-2 border-2 rounded-md">Import customers (.cvs)</button>
             <input type="file" id="contactfile" ref="contactfile" accept=".csv" maxlength="512000" class="hidden" @change="handleFileUpload"/>
@@ -11,20 +11,26 @@
             <input type="file" id="addressfile" ref="addressfile" accept=".csv" maxlength="512000" class="hidden" @change="handleFileUpload"/>
             <button @click="$refs.addressfile.click()" class="bg-gray-500 p-2 border-2 rounded-md">Import addresses (.cvs)</button>
         </div>
-        <div class="w-full col-span-3 bg-gray-200">
-            <p>Customers</p>
-            <input class="border py-1 pl-1 rounded-sm" type="text" id="customer" placeholder="Search by all columns" >
-            <h2>processed CSV Data:</h2>
-            <table>
+        <div class="w-full col-start-2 col-span-3 bg-gray-200 mt-12">
+            <p class="mb-3 pt-5">Customers</p>
+            <input class="justify-self-start border py-1 pl-1 mb-3 rounded-sm" type="text" id="customer" placeholder="Search by all columns" >
+            <table class="">
                 <tr>
                     <th class="px-3" v-for="(header, index) in headers" :key="index">{{ header }}</th>
                 </tr>
                 <tr v-for="(row, index) in displayedCustomerData" :key="index">
-                    <td v-for="(cell, index) in row" :key="index">{{ cell }}</td>
+                    <template v-for="(cell, key, index) in row">
+                        <td :key="index" v-if="key !== 'contact_person_id'">{{ cell }}</td>
+                    </template>
+                    <button class="bg-gray-500 p-2 border-2 rounded-md" @click="deleteRow(row.intnr, row.contact_person_id)">Delete</button>
+
                 </tr>
             </table>
-            
+            <div v-if="customerNotfound"  class="absolute top-0 justify-self-center p-4 mt-8 text-sm text-yellow-900 rounded-lg bg-yellow-100/80" role="alert">
+                <span class="font-medium">Warning!</span><br> {{errorMessage}}
+            </div>
         </div>
+        
     </div>
 </template>
 
@@ -46,7 +52,8 @@ export default {
         const user = store.getters.getUser;
         const customerData = ref([]);
         const headers = ['Internal number', 'First name', 'Last name', 'Company name', 'Country', 'Zip/City', 'Address', 'Actions'];
-
+        const customerNotfound = ref(false);
+        const errorMessage = ref("");
         // Changes the data everytime the customerData changes
         /**
          * TODO:
@@ -77,6 +84,7 @@ export default {
                         country: address ? address.country : '',
                         zip_city: address ? address.zip : '',
                         street: address ? address.street : '',
+                        contact_person_id: contact_person._id,
                     };
                 })
             )
@@ -114,14 +122,22 @@ export default {
             } else {
                 console.warn("No file selected.");
             }
+
+            event.target.value = null;
         };
 
         const emitCustomersToServer = async (csvData) => {
             try {
+                console.log("adding customers")
                 const response = await axios.post('http://localhost:3000/customersUpload', csvData);
 
                 console.log("repsonseData:", response.data);
                 customerData.value = response.data.allCustomers;
+
+                if(response.data.errorMessage !== ""){
+                    customerNotfound.value = true;
+                    errorMessage.value = response.data.errorMessage;
+                }
 
             } catch (error) {
             console.log(error);
@@ -130,6 +146,11 @@ export default {
         const emitContactsToServer = async (csvData) => {
             try {
                 const response = await axios.post('http://localhost:3000/contactsUpload', csvData);
+
+                if(response.data.errorMessage !== ""){
+                    customerNotfound.value = true;
+                    errorMessage.value = response.data.errorMessage;
+                }
 
                 console.log("repsonseData:", response.data);
                 customerData.value = response.data.allCustomers;
@@ -143,6 +164,10 @@ export default {
             try {
                 const response = await axios.post('http://localhost:3000/addressesUpload', csvData);
 
+                if(response.data.errorMessage !== ""){
+                    customerNotfound.value = true;
+                    errorMessage.value = response.data.errorMessage;
+                }
                 console.log("repsonseData:", response.data);
                 customerData.value = response.data.allCustomers;
 
@@ -151,7 +176,23 @@ export default {
             }
         };
 
-        return { user, handleFileUpload, emitCustomersToServer, customerData, headers, displayedCustomerData };
+        const deleteRow = async (intnr, _id) => {
+            try {
+                const response = await axios.delete('http://localhost:3000/deleteRow', {
+                    data: {
+                        intnr: intnr,
+                        _id: _id,
+                    }
+                });
+                console.log(response);
+                console.log("deleteRow");
+                customerData.value = response.data.allCustomers;
+            } catch (error) {
+                console.log(error);
+            }
+        };
+
+        return { user, handleFileUpload, deleteRow, customerData, headers, displayedCustomerData, customerNotfound, errorMessage };
     },
 };
 </script>

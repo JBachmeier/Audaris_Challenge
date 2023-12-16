@@ -1,11 +1,14 @@
 <template>
+    
     <div class="w-screen h-screen grid place-content-center">
+      <div v-if="wrongInput" class="absolute top-0 justify-self-center p-4 mt-8 text-sm text-red-800 rounded-lg bg-red-50" role="alert">
+        <span class="font-medium">Error!</span><br> Wrong Username or Password!
+      </div>
       <div class="bg-gray-500 p-10 rounded-lg drop-shadow-xl">
         <p class="text-white mb-3 text-xl">SellCars</p>
         <form @submit.prevent="emitLoginToServer" class="grid">
           <input class="border py-1 pl-1 rounded-sm" type="text" id="usrname" placeholder="Username" v-model="usrname" maxlength="75"/><br>
           <input class="border py-1 pl-1 rounded-sm" type="password" id="password" placeholder="Password" v-model="password" maxlength="75"/><br>
-          <p class="text-red-500 mb-5" :class="{'invisible': wrongInput}">Wrong Username or Password!</p>
           <button class="bg-white w-1/2 rounded-md justify-self-end" type="submit">Login</button>
         </form>
       </div>
@@ -25,7 +28,7 @@
       const password = ref('');
       const store = useStore();
 
-      let wrongInput = ref(true);
+      let wrongInput = ref(false);
   
       /**
        * Sends an asynchronous event to the Server for Logging in
@@ -37,8 +40,8 @@
           const response = await axios.post('http://localhost:3000/userLogin', eventData);
 
           if (response.status === 200) {
-            wrongInput.value = true;
-
+            wrongInput.value = false;
+            console.log("response data:" ,response.data);
             store.commit('setUser', response.data);
             router.push('/customers-page');
           } else {
@@ -46,7 +49,7 @@
           }
 
         } catch (error) {
-          wrongInput.value = false;
+          wrongInput.value = true;
           store.commit('setUser', null);
         }
       };

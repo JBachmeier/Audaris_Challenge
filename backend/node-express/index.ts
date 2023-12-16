@@ -16,6 +16,8 @@ const hasher = new Hasher();
 const app = express();
 const port = 3000;
 
+let errorMessage: string = "";
+
 let users: any = null;
 
 const userSchema = new Schema({
@@ -95,26 +97,26 @@ app.use(cors({
 
 // Route to handle the POST request
 app.post('/userLogin', async (req: Request, res: Response) => {
-  const receivedData = req.body;
+  const { usrname, password } = req.body;
 
   try {
-    // Log the received data
-    console.log('Received data:', receivedData);
-
-    const { usrname } = receivedData;
-    const { password } = receivedData;
 
     const hashedPW = hasher.hashPassword(password)
-    let date: Date = new Date(); 
     
     // Find the user
-    const user = await users.findOneAndUpdate({ 'email': usrname, 'password_hash':  hashedPW}, {'updated_at': date}, {returnDocument: 'before'}).exec();
+    const user = await users.findOneAndUpdate({ 'email': usrname, 'password_hash':  hashedPW}, {'updated_at': new Date()}, {returnDocument: 'before'}).exec();
     
     if (user) {
       console.log('User found:', user.first_name);
-      console.log(date)
-      res.status(200).json({lastLogin: user.updated_at, message: 'User found', user });
-    } else {
+      res.status(200).json({
+        message: 'User found', 
+        user: {
+          // Only return necessary user information
+          id: user._id,
+          username: user.email,
+          lastLogin: user.updated_at,
+        }
+      });    } else {
       console.log('User not found');
       res.status(401).json({ message: 'User not found' });
     }
@@ -132,12 +134,23 @@ app.post('/userLogin', async (req: Request, res: Response) => {
 app.post('/customersUpload',async (req: Request, res: Response) => {
   const receivedCSV = req.body;
   let allCustomersFormatted = [];
-  
+  errorMessage = "";
+
+  const allCustomersPre = await customersModel.find();
+
+  console.log("all Customers Pre", allCustomersPre)
   try {
     console.log('Received data:', receivedCSV);
 
     for (let row of receivedCSV) {
-
+      if(allCustomersPre){
+        console.log("model found");
+        if(allCustomersPre.find((customer: any) => customer.intnr == row.intnr)){
+          console.log("Customer with ID: " + row.intnr + " already exists");
+          errorMessage += "Customer with ID: " + row.intnr + " already exists\n";
+          continue;
+        }
+      }
     /*const address = new mongoose.model('Address', addressSchema)({
       company_name: row.company_name,
       country: row.country,
@@ -174,8 +187,10 @@ app.post('/customersUpload',async (req: Request, res: Response) => {
             mobile_phone: row.mobile_phone,
             birth_date: row.birth_date,
         }],
-        addresses: address // Add the Address to the addresses array directly instead of referencing (see asignment)
-    };
+        addresses: address, // Add the Address to the addresses array directly instead of referencing (see asignment)
+        created_at: new Date(),
+        updated_at: new Date(),
+      };
 
     allCustomersFormatted.push(customer);
 
@@ -184,6 +199,8 @@ app.post('/customersUpload',async (req: Request, res: Response) => {
     await customersModel.insertMany(allCustomersFormatted);    
 
     const allCustomers = await customersModel.find();
+
+    console.log("all Customers", allCustomers);
 
     // Add the address-reference to the contact person
     // this has to be done AFTER the customers are created, due to the creation of the id by MongoDB
@@ -194,10 +211,10 @@ app.post('/customersUpload',async (req: Request, res: Response) => {
 
     
 
-    console.log("all Customers", allCustomersFormatted);
-    console.log("first Customer", allCustomersFormatted[0]);
-    console.log("first Customers contact Persons", allCustomersFormatted[0].contact_persons);
-    res.status(200).json({ message: 'CSV uploaded' , allCustomers});
+    //console.log("all Customers", allCustomersFormatted);
+    //console.log("first Customer", allCustomersFormatted[0]);
+    //console.log("first Customers contact Persons", allCustomersFormatted[0].contact_persons);
+    res.status(200).json({ message: 'CSV uploaded' , allCustomers, errorMessage: errorMessage});
 
   } catch (error){
     console.error(error)
@@ -206,13 +223,14 @@ app.post('/customersUpload',async (req: Request, res: Response) => {
 
 /**
  * TODO:
- * - Add response for not found customers
  * - Implement error handling
  */
 
 app.post('/contactsUpload',async (req: Request, res: Response) => {
   const receivedCSV = req.body;
-  
+  errorMessage = "";
+   
+
   try {
     console.log('Received data:', receivedCSV);
 
@@ -240,9 +258,12 @@ app.post('/contactsUpload',async (req: Request, res: Response) => {
     if (!customer) {
       //res.status(404).json({ message: 'Customer not found' });
       //return;
+      errorMessage += "Customer not found for ID: " + row.intnr + "\n";
+      continue;
     } else{
       console.log("customer found");
       customer.contact_persons.push(contact_person);
+      customer.updated_at = new Date();
       await customer.save();
     }
 
@@ -253,7 +274,7 @@ app.post('/contactsUpload',async (req: Request, res: Response) => {
     console.log("all Customers", allCustomers);
 
     console.log("first Customers contact", allCustomers[0].contact_persons);
-    res.status(200).json({ message: 'Contacs uploaded' , allCustomers});
+    res.status(200).json({ message: 'Contacs uploaded' , allCustomers, errorMessage: errorMessage});
 
   } catch (error){
     console.error(error)
@@ -262,13 +283,13 @@ app.post('/contactsUpload',async (req: Request, res: Response) => {
 
 /**
  * TODO:
- * - Add response for not found customers
  * - Implement error handling
  */
 
 app.post('/addressesUpload',async (req: Request, res: Response) => {
   const receivedCSV = req.body;
-  let errorMessage = "";
+  errorMessage = "";
+
   try {
     console.log('Received data:', receivedCSV);
 
@@ -290,8 +311,11 @@ app.post('/addressesUpload',async (req: Request, res: Response) => {
     if (!customer) {
       //res.status(404).json({ message: 'Customer not found' });
       //return;
+      errorMessage += "Customer not found for ID: " + row.intnr + "\n";
+      continue;
     } else{
       customer.addresses.push(address);
+      customer.updated_at = new Date();
       await customer.save();
     }
 
@@ -310,17 +334,34 @@ app.post('/addressesUpload',async (req: Request, res: Response) => {
   }
 });
 
-function validateCustomerData(customer: any): boolean {
-  if(customer.intnr.length != 10){
-    return false;
+app.delete('/deleteRow',async (req: Request, res: Response) => {
+  const rowToDelete = req.body;
+  errorMessage = "";
+
+  try {
+    console.log('Received row:', rowToDelete.intnr);
+
+    // Delete the contact person from contact_persons array
+    // if the contact person is the only one, delete the whole customer
+    const customer = await customersModel.findOne({ intnr: rowToDelete.intnr });
+    console.log(customer.contact_persons.length);
+    if(customer.contact_persons.length == 1){
+      await customersModel.deleteOne({ intnr: rowToDelete.intnr });
+    } else{
+      customer.contact_persons.pull({ _id: rowToDelete._id });
+      await customer.save();
+    }
+
+    //await customersModel.deleteOne({ intnr: rowToDelete.data.intnr });
+
+    const allCustomers = await customersModel.find();
+    
+    res.status(200).json({ message: 'row deleted', allCustomers});
+
+  } catch (error){
+    console.error(error)
   }
-  if(customer.type != "PRIVATE" && customer.type != "COMPANY" && customer.type != "DEALER"){
-    return false;
-  }
-  if(customer.contact_persons.length != 1){
-    return false;
-  }
-}
+});
 
 // Start the server
 startServer();
