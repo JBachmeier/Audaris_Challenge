@@ -139,8 +139,8 @@ app.get('/getCustomers', async (req: Request, res: Response) => {
 
 /**
  * TODO:
- * - Implement validation system
- * - Implement error handling
+ * - Implement validation system (email format correct, phone number, company_name + fax + phone + email only for type COMPANY or DEALER, ...)
+ * - Implement error handling 
  */
 app.post('/customersUpload',async (req: Request, res: Response) => {
   const receivedCSV = req.body;
@@ -162,17 +162,6 @@ app.post('/customersUpload',async (req: Request, res: Response) => {
           continue;
         }
       }
-    /*const address = new mongoose.model('Address', addressSchema)({
-      company_name: row.company_name,
-      country: row.country,
-      city: row.city,
-      zip: row.zip,
-      fax: row.fax,
-      phone: row.phone,
-      street: row.street,
-      email: row.email_1
-    });
-    await address.save();*/
 
     const address = {
       company_name: row.company_name,
@@ -185,8 +174,6 @@ app.post('/customersUpload',async (req: Request, res: Response) => {
       email: row.email_1
     };
 
-    //const createdAddress = await addressModel.create(address);
-
     // Create the customer with a reference to the address
     const customer = {
         intnr: row.intnr,
@@ -198,7 +185,7 @@ app.post('/customersUpload',async (req: Request, res: Response) => {
             mobile_phone: row.mobile_phone,
             birth_date: row.birth_date,
         }],
-        addresses: address, // Add the Address to the addresses array directly instead of referencing (see asignment)
+        addresses: address,
         created_at: new Date(),
         updated_at: new Date(),
       };
@@ -220,11 +207,6 @@ app.post('/customersUpload',async (req: Request, res: Response) => {
       await customer.save();
     }
 
-    
-
-    //console.log("all Customers", allCustomersFormatted);
-    //console.log("first Customer", allCustomersFormatted[0]);
-    //console.log("first Customers contact Persons", allCustomersFormatted[0].contact_persons);
     res.status(200).json({ message: 'CSV uploaded' , allCustomers, errorMessage: errorMessage});
 
   } catch (error){
@@ -267,8 +249,6 @@ app.post('/contactsUpload',async (req: Request, res: Response) => {
     const customer = await customersModel.findOne({ intnr: row.intnr });
 
     if (!customer) {
-      //res.status(404).json({ message: 'Customer not found' });
-      //return;
       errorMessage += "Customer not found for ID: " + row.intnr + "\n";
       continue;
     } else{
@@ -282,9 +262,6 @@ app.post('/contactsUpload',async (req: Request, res: Response) => {
 
     const allCustomers = await customersModel.find();
 
-    console.log("all Customers", allCustomers);
-
-    console.log("first Customers contact", allCustomers[0].contact_persons);
     res.status(200).json({ message: 'Contacs uploaded' , allCustomers, errorMessage: errorMessage});
 
   } catch (error){
@@ -320,8 +297,6 @@ app.post('/addressesUpload',async (req: Request, res: Response) => {
     const customer = await customersModel.findOne({ intnr: row.intnr });
 
     if (!customer) {
-      //res.status(404).json({ message: 'Customer not found' });
-      //return;
       errorMessage += "Customer not found for ID: " + row.intnr + "\n";
       continue;
     } else{
@@ -334,10 +309,6 @@ app.post('/addressesUpload',async (req: Request, res: Response) => {
 
     const allCustomers = await customersModel.find();
 
-    console.log("all Customers", allCustomers);
-
-    console.log("all addresses", receivedCSV);
-    console.log("first address", receivedCSV[0]);
     res.status(200).json({ message: 'addresses uploaded' , allCustomers, errorMessage: errorMessage});
 
   } catch (error){
@@ -352,18 +323,11 @@ app.delete('/deleteRow',async (req: Request, res: Response) => {
   try {
     console.log('Received row:', rowToDelete.intnr);
 
-    // Delete the contact person from contact_persons array
-    // if the contact person is the only one, delete the whole customer
     const customer = await customersModel.findOne({ intnr: rowToDelete.intnr });
-    console.log(customer.contact_persons.length);
-    if(customer.contact_persons.length == 1){
-      await customersModel.deleteOne({ intnr: rowToDelete.intnr });
-    } else{
-      customer.contact_persons.pull({ _id: rowToDelete._id });
-      await customer.save();
-    }
 
-    //await customersModel.deleteOne({ intnr: rowToDelete.data.intnr });
+    // Delete the contact person from contact_persons array
+    customer.contact_persons.pull({ _id: rowToDelete._id });
+    await customer.save();
 
     const allCustomers = await customersModel.find();
     
