@@ -1,5 +1,5 @@
 <template>
-    <div class="w-screen h-screen bg-white grid grid-cols-4">
+    <div class="w-screen h-screen bg-white grid grid-cols-4  justify-content-stretch">
         <div class="fixed grid justify-self-stretch">
             <p>User</p>
             <p>{{ user.username }}</p>
@@ -13,21 +13,29 @@
         </div>
         <div class="w-full col-start-2 col-span-3 bg-gray-200 mt-12">
             <p class="mb-3 pt-5">Customers</p>
-            <input class="justify-self-start border py-1 pl-1 mb-3 rounded-sm" type="text" id="customer" placeholder="Search by all columns" >
-            <table class="">
-                <tr>
-                    <th class="px-3" v-for="(header, index) in headers" :key="index">{{ header }}</th>
-                </tr>
-                <tr v-for="(row, index) in displayedCustomerData" :key="index">
-                    <template v-for="(cell, key, index) in row">
-                        <td :key="index" v-if="key !== 'contact_person_id'">{{ cell }}</td>
-                    </template>
-                    <button class="bg-gray-500 p-2 border-2 rounded-md" @click="deleteRow(row.intnr, row.contact_person_id)">Delete</button>
-
-                </tr>
+            <input class="justify-self-start border py-1 pl-1 mb-3 rounded-sm" type="text" id="customer" placeholder="Search by all columns" v-model="search">
+            
+            <table class="table-fixed w-full text-center bg-white overflow-hidden">
+                <thead class="bg-white text-gray-600 shadow-md">
+                    <tr>
+                        <th class="px-4 py-2" v-for="(header, index) in headers" :key="index">{{ header }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="(row, index) in filteredCustomerData" :key="index" class="text-gray-700" :class="{ 'bg-gray-100': index % 2 === 1}">
+                        <template v-for="(cell, key, index) in row">
+                            <td class="px-4 py-2" :key="index" v-if="key !== 'contact_person_id'">{{ cell }}</td>
+                        </template>
+                        <td class="px-4 py-2">
+                            <div class="h-full">
+                                <button class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded" @click="deleteRow(row.intnr, row.contact_person_id)">Delete</button>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
             </table>
             <div v-if="customerNotfound"  class="absolute top-0 justify-self-center p-4 mt-8 text-sm text-yellow-900 rounded-lg bg-yellow-100/80" role="alert">
-                <span class="font-medium">Warning!</span><br> {{errorMessage}}
+                <span class="font-medium">Warning!</span><br> <span v-html="errorMessage"></span>
             </div>
         </div>
         
@@ -40,6 +48,9 @@ import { useStore } from 'vuex';
 import axios from 'axios';
 import Papa from 'papaparse';
 
+// Has do be defined outside of setup() because it is used in the beforeMount() property
+let customerData = ref([]);
+
 /**
  * TODO:
  * - Add search function
@@ -47,30 +58,23 @@ import Papa from 'papaparse';
  * - Refactor code
  */
 export default {
+    beforeMount() {
+        const response = axios.get('http://localhost:3000/getCustomers');
+        response.then((response) => {
+            console.log("all: ", response.data.allCustomers)
+            customerData.value = response.data.allCustomers;
+        });
+    },
     setup() {
         const store = useStore();
         const user = store.getters.getUser;
-        const customerData = ref([]);
-        const headers = ['Internal number', 'First name', 'Last name', 'Company name', 'Country', 'Zip/City', 'Address', 'Actions'];
+        const headers = ['#', 'First name', 'Last name', 'Company name', 'Country', 'Zip/City', 'Address', 'Actions'];
         const customerNotfound = ref(false);
         const errorMessage = ref("");
-        // Changes the data everytime the customerData changes
-        /**
-         * TODO:
-         * - Change the adress to the reference inside the contact_person array
-         
-        const displayedCustomerData = computed(() => 
-        
-        customerData.value.map(customer => ({
-            intnr: customer.intnr,
-            first_name: customer.first_name,
-            last_name: customer.last_name,
-            company_name: customer.company_name,
-            country: customer.country,
-            zip_city: customer.zip,
-            street: customer.street,
-        })));*/
+        //let displayedCustomerData = ref([]);
+        let search = ref("");
 
+        // Changes the data everytime the customerData changes
         const displayedCustomerData = computed(() => 
             customerData.value.flatMap(customer => 
                 customer.contact_persons.map(contact_person => {
@@ -89,6 +93,14 @@ export default {
                 })
             )
         );
+
+        const filteredCustomerData = computed(() => {
+            return displayedCustomerData.value.filter(row =>
+                Object.values(row).some(value =>
+                value.toString().toLowerCase().includes(search.value.toLowerCase())
+                )
+            );
+        });
 
 
         console.log(user);
@@ -192,7 +204,7 @@ export default {
             }
         };
 
-        return { user, handleFileUpload, deleteRow, customerData, headers, displayedCustomerData, customerNotfound, errorMessage };
+        return { user, handleFileUpload, deleteRow, customerData, headers, displayedCustomerData, customerNotfound, errorMessage, search, filteredCustomerData };
     },
 };
 </script>

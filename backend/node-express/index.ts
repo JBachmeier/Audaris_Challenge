@@ -67,7 +67,6 @@ const customerSchema = new Schema({
 });
 
 const customersModel = mongoose.model('Customer', customerSchema);
-//const addressModel = new mongoose.model('Address', addressSchema);
 
 async function startServer() {
   try {
@@ -126,6 +125,18 @@ app.post('/userLogin', async (req: Request, res: Response) => {
   }
 });
 
+app.get('/getCustomers', async (req: Request, res: Response) => {
+  try {
+    const allCustomers = await customersModel.find();
+    console.log("all Customers", allCustomers);
+    res.status(200).json({ message: 'Customers found' , allCustomers});
+
+  } catch (error) {
+    console.error('Error finding customers:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
 /**
  * TODO:
  * - Implement validation system
@@ -147,7 +158,7 @@ app.post('/customersUpload',async (req: Request, res: Response) => {
         console.log("model found");
         if(allCustomersPre.find((customer: any) => customer.intnr == row.intnr)){
           console.log("Customer with ID: " + row.intnr + " already exists");
-          errorMessage += "Customer with ID: " + row.intnr + " already exists\n";
+          errorMessage += "Customer with ID: " + row.intnr + " already exists<br>";
           continue;
         }
       }
