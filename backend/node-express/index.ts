@@ -1,7 +1,6 @@
 /**
  * TODO:
  * - Refactor Database!
- * - Refactor Events (POST,GET,...)
  */
 
 import {Schema} from 'mongoose';
@@ -161,8 +160,8 @@ app.post('/customersUpload',async (req: Request, res: Response) => {
       }
       if(allCustomersFormatted){
         if(allCustomersFormatted.some((customer: any) => customer.intnr == row.intnr)){
-              console.log("Customer with ID: " + row.intnr + " already exists in the formatted customers array");
-              errorMessage += "Customer with ID: " + row.intnr + " already exists in the formatted customers array<br>";
+              console.log("Customer with ID: " + row.intnr + " can't be created mulitple times");
+              errorMessage += "Customer with ID: " + row.intnr + " can't be created mulitple times<br>";
               continue;
         }
       }
@@ -217,7 +216,6 @@ app.post('/customersUpload',async (req: Request, res: Response) => {
   } catch (error){
     console.error(error)
     res.status(500).json({ message: 'Internal server error' , error: error});
-    
   }
 });
 
@@ -272,6 +270,7 @@ app.post('/contactsUpload',async (req: Request, res: Response) => {
     res.status(200).json({ message: 'Contacs uploaded' , allCustomers, errorMessage: errorMessage});
 
   } catch (error){
+    res.status(500).json({ message: 'Internal server error' , error: error});
     console.error(error)
   }
 });
@@ -346,6 +345,10 @@ app.delete('/deleteRow',async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * TODO:
+ * - Implement validation of data
+ */
 app.put('/updateCustomer',async (req: Request, res: Response) => {
   const customerToUpdate = req.body;
   console.log("customerToUpdate", customerToUpdate);

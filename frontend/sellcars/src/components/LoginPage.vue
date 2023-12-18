@@ -35,13 +35,11 @@
        */
       const emitLoginToServer = async () => {
         try {
-          console.log(wrongInput.value)
           const eventData = { usrname: usrname.value, password: password.value };
           const response = await axios.post('http://localhost:3000/userLogin', eventData);
 
           if (response.status === 200) {
             wrongInput.value = false;
-            console.log("response data:" ,response.data);
             store.commit('setUser', response.data);
             router.push('/customers-page');
           } else {

@@ -230,8 +230,6 @@ export default {
             }
         });
 
-        console.log(user);
-
         const deleteRow = async (intnr, _id) => {
             try {
                 const response = await axios.delete('http://localhost:3000/deleteRow', {
@@ -240,8 +238,6 @@ export default {
                         _id: _id,
                     }
                 });
-                console.log(response);
-                console.log("deleteRow");
                 customerData.value = response.data.allCustomers;
             } catch (error) {
                 console.log(error);
@@ -251,8 +247,6 @@ export default {
         const updateCustomer = async (customer) => {
             try {
                 const response = await axios.put('http://localhost:3000/updateCustomer', customer);
-                console.log(response);
-                console.log("updateCustomer");
                 customerData.value = response.data.allCustomers;
             } catch (error) {
                 console.log(error);

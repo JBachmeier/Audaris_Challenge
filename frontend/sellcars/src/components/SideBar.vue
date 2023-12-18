@@ -24,34 +24,25 @@ export default {
     props: {
         userProp: {
             type: Object,
-            required: true
         },
         customerDataProp: {
             type: Array,
-            required: true
         },
         customerNotfoundProp: {
             type: Boolean,
-            required: true
         },
         fatalErrorProp: {
             type: Boolean,
-            required: true
         },
         errorMessageProp: {
             type: String,
-            required: true
         }
     },
     setup(props, {emit} ) {
 
         const handleFileUpload = async (event) => {
-            console.log("event:", event);
             const selectedFile = event.target.files[0];
-            console.log(selectedFile);
             if (selectedFile.size > 0) {
-                console.log("File name:", selectedFile.name);
-                console.log("File size:", selectedFile.size, "bytes");
                 try {
                     const result = await new Promise((resolve) => {
                         Papa.parse(selectedFile, {
@@ -60,7 +51,6 @@ export default {
                         });
                     });
 
-                    console.log("result", result);
                     if(event.target.id === "customersfile"){
                         await emitCustomersToServer(result.data, props, emit);
                     } else if(event.target.id === "contactfile"){
@@ -80,11 +70,9 @@ export default {
 
         const emitCustomersToServer = async (csvData) => {
             try {
-                console.log("adding customers")
                 const response = await axios.post('http://localhost:3000/customersUpload', csvData);
 
-                console.log("repsonseData:", response.data);
-
+                console.log("Response: ", response);
                 emit('update:customerDataProp', response.data.allCustomers);
 
                 if(response.data.errorMessage !== ""){
@@ -93,8 +81,9 @@ export default {
                 }
 
             } catch (error) {
+                console.log(error);
                 emit('update:fatalErrorProp', true);
-                emit('update:errorMessageProp', error.response.data.error.errors.type.value + " is not a valid input for column: " + error.response.data.error.errors.type.path);
+                emit('update:errorMessageProp', error.response.data.error.message);
                 console.log(error.response.data.error.errors.type);
             }
         };
@@ -108,7 +97,6 @@ export default {
                     emit('update:errorMessageProp', response.data.errorMessage)
                 }
 
-                console.log("repsonseData:", response.data);
                 emit('update:customerDataProp', response.data.allCustomers);
 
             } catch (error) {
@@ -123,7 +111,6 @@ export default {
                     emit('update:customerNotfoundProp', true);
                     emit('update:errorMessageProp', response.data.errorMessage)
                 }
-                console.log("repsonseData:", response.data);
                 emit('update:customerDataProp', response.data.allCustomers);
 
             } catch (error) {

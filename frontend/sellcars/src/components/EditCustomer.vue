@@ -1,4 +1,9 @@
 <template>
+    <!--
+        TODO:
+        - style component
+        - consider small screen
+    -->
     <div class="content-center grid">
         <!-- Button to open the modal -->
         <button @click="openModal" class="hover:text-gray-700 text-gray-500 font-bold justify-self-center">
@@ -33,9 +38,9 @@
                         <option v-for="(data, index) in newCustomerData.addresses" :key="index" :value="data._id">{{newCustomerData.addresses[index].company_name}}, {{newCustomerData.addresses[index].zip}} {{newCustomerData.addresses[index].city}}, {{newCustomerData.addresses[index].street}}</option>
                     </select>
                     <label>Created at: </label><p>{{ newCustomerData.created_at }}</p>
-                    <label>Update at: </label><p>{{ newCustomerData.updated_at }}</p>
-                    <button class="mr-10 shadow-xl border rounded-xl px-5 py-2 hover:bg-gray-200" type="submit">Save</button>
-                    <button class="shadow-xl border rounded-xl px-5 py-2 hover:bg-gray-200" @click="closeModal">Cancel</button>
+                    <label>Updated at: </label><p>{{ newCustomerData.updated_at }}</p>
+                    <button class="col-span-2 mx-10 my-5 shadow-xl border rounded-xl px-5 py-2 bg-gray-200 hover:bg-gray-400" type="submit">Save</button>
+                    <button class="col-span-2 mx-10 shadow-xl border rounded-xl px-5 py-2 bg-gray-200 hover:bg-gray-400" @click="closeModal">Cancel</button>
                 </form>
             </div>
         </div>
@@ -43,13 +48,10 @@
 </template>
 
 <script>
+
 import { ref } from "vue";
+
 export default {
-    methods: {
-        logIndex(index) {
-            console.log("index: ", index);
-        }
-    },
     props: {
         customerProp: {
             type: Object,
@@ -73,15 +75,11 @@ export default {
 
         const openModal = () => {
             newCustomerData.value = JSON.parse(JSON.stringify(props.customerProp));
-            console.log("Customer details: ", props.customerProp);
-            console.log("Contact Person ID: ", props.contact_person_idProp);
             contact_person.value = newCustomerData.value.contact_persons.find((contact) => contact._id === props.contact_person_idProp);
-            console.log("Contact Person : ", contact_person.value);
             let address = newCustomerData.value.addresses.find((address) => address._id === contact_person.value.address);
             if(address !== undefined) {
                 contactAddress.value = address._id;
             }
-            console.log("Contact Address: ", contactAddress.value)
             // Set the customer details here based on the parameter passed
             showModal.value = true;
         };
@@ -93,12 +91,11 @@ export default {
         /**
          * TODO:
          * - Check for false input!
+         * - change updated_at correctly
          */
         const submitChanges = () => {
             // Save the changes to the database
-            console.log("Contact Address: ", contactAddress.value);
             contact_person.value.address = newCustomerData.value.addresses.find((address) =>address._id === contactAddress.value)._id;
-            console.log("New Customer Data: ", newCustomerData.value);
             emit('update-customer', newCustomerData.value);
             showModal.value = false;
         };
@@ -120,5 +117,10 @@ export default {
 <style>
 label {
     justify-self: start;
+    margin-right: 0.5rem;
+}
+input, label, p {
+    margin-top: 0.5rem;
+    margin-bottom: 0.5rem;
 }
 </style>

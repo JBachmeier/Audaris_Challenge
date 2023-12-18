@@ -39,6 +39,7 @@ const globalVars = createStore({
  * - Add the isAuthenticated to Cookies, so it doenst reset
  * -> Add a logout button
  */
+
 // Function to check if the user is logged in
 const isAuthenticated = () => {
     return globalVars.state.user !== null;
