@@ -2,10 +2,12 @@ Setup:
 
 Backend:
 cd .\backend\node-express\
+npm -i
 npm run start
 
 Frontend:
 cd .\frontend\sellcars\
+npm -i
 npm run serve
 
 
