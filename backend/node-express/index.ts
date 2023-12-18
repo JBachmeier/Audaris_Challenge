@@ -84,7 +84,6 @@ async function startServer() {
   }
 }
 
-// Middleware to parse JSON in the request body
 app.use(express.json());
 
 app.use(cors({
@@ -94,7 +93,6 @@ app.use(cors({
 
 
 
-// Route to handle the POST request
 app.post('/userLogin', async (req: Request, res: Response) => {
   const { usrname, password } = req.body;
 
@@ -144,7 +142,7 @@ app.get('/getCustomers', async (req: Request, res: Response) => {
  */
 app.post('/customersUpload',async (req: Request, res: Response) => {
   const receivedCSV = req.body;
-  let allCustomersFormatted = [];
+  let allCustomersFormatted: { intnr: any; type: any; contact_persons: { first_name: any; last_name: any; email: any; mobile_phone: any; birth_date: any; }[]; addresses: { company_name: any; country: any; city: any; zip: any; fax: any; phone: any; street: any; email: any; }; created_at: Date; updated_at: Date; }[] = [];
   errorMessage = "";
 
   const allCustomersPre = await customersModel.find();
@@ -155,13 +153,20 @@ app.post('/customersUpload',async (req: Request, res: Response) => {
 
     for (let row of receivedCSV) {
       if(allCustomersPre){
-        console.log("model found");
         if(allCustomersPre.find((customer: any) => customer.intnr == row.intnr)){
           console.log("Customer with ID: " + row.intnr + " already exists");
           errorMessage += "Customer with ID: " + row.intnr + " already exists<br>";
           continue;
         }
       }
+      if(allCustomersFormatted){
+        if(allCustomersFormatted.some((customer: any) => customer.intnr == row.intnr)){
+              console.log("Customer with ID: " + row.intnr + " already exists in the formatted customers array");
+              errorMessage += "Customer with ID: " + row.intnr + " already exists in the formatted customers array<br>";
+              continue;
+        }
+      }
+      
 
     const address = {
       company_name: row.company_name,
@@ -211,6 +216,8 @@ app.post('/customersUpload',async (req: Request, res: Response) => {
 
   } catch (error){
     console.error(error)
+    res.status(500).json({ message: 'Internal server error' , error: error});
+    
   }
 });
 
@@ -318,6 +325,7 @@ app.post('/addressesUpload',async (req: Request, res: Response) => {
 
 app.delete('/deleteRow',async (req: Request, res: Response) => {
   const rowToDelete = req.body;
+  console.log("rowToDelete", rowToDelete);
   errorMessage = "";
 
   try {
@@ -336,6 +344,25 @@ app.delete('/deleteRow',async (req: Request, res: Response) => {
   } catch (error){
     console.error(error)
   }
+});
+
+app.put('/updateCustomer',async (req: Request, res: Response) => {
+  const customerToUpdate = req.body;
+  console.log("customerToUpdate", customerToUpdate);
+
+  try {
+    let customer = await customersModel.findOneAndUpdate({ intnr: customerToUpdate.intnr }, customerToUpdate);
+
+    customer.updated_at = new Date();
+
+    const allCustomers = await customersModel.find();
+    console.log("all Customers updated: ", allCustomers);
+    res.status(200).json({ message: 'row deleted', allCustomers});
+  } catch (error){
+    console.error(error)
+  }
+
+  
 });
 
 // Start the server
